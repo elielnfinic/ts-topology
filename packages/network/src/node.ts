@@ -23,6 +23,7 @@ import {
 	type Stream,
 	type StreamHandler,
 } from "@libp2p/interface";
+
 import { createFromPrivKey } from "@libp2p/peer-id-factory";
 import { pubsubPeerDiscovery } from "@libp2p/pubsub-peer-discovery";
 import { webRTC, webRTCDirect } from "@libp2p/webrtc";
@@ -34,6 +35,7 @@ import { type Libp2p, createLibp2p } from "libp2p";
 import { fromString as uint8ArrayFromString } from "uint8arrays/from-string";
 import { Message } from "./proto/messages_pb.js";
 import { uint8ArrayToStream } from "./stream.js";
+import { kadDHT, KadDHT } from "@libp2p/kad-dht";
 
 export * from "./stream.js";
 
@@ -49,6 +51,7 @@ export class TopologyNetworkNode {
 	private _config?: TopologyNetworkNodeConfig;
 	private _node?: Libp2p;
 	private _pubsub?: PubSub<GossipsubEvents>;
+	private _dht?: KadDHT
 
 	peerId = "";
 
@@ -95,9 +98,12 @@ export class TopologyNetworkNode {
 				autonat: autoNAT(),
 				dcutr: dcutr(),
 				identify: identify(),
-				pubsub: gossipsub({
+				pubsub: gossipsub({ // this will probably be removed or disabled after DHT is fully implemented
 					allowPublishToZeroTopicPeers: true,
 				}),
+				dht: kadDHT({
+
+				})
 			},
 			streamMuxers: [yamux()],
 			transports: [
@@ -110,6 +116,7 @@ export class TopologyNetworkNode {
 				webSockets(),
 				webTransport(),
 			],
+			
 		});
 
 		if (this._config?.bootstrap)
@@ -120,6 +127,9 @@ export class TopologyNetworkNode {
 				this._node.dial(multiaddr(addr));
 			}
 		}
+
+
+		this._dht = this._node	.services.dht as KadDHT;
 
 		this._pubsub = this._node.services.pubsub as PubSub<GossipsubEvents>;
 		this.peerId = this._node.peerId.toString();
