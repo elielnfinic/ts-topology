@@ -63,10 +63,11 @@ async function sendMessage(message: string) {
 }
 
 async function createConnectHandlers() {
-	node.addCustomGroupMessageHandler(topologyObject.id, (e) => {
+	node.addCustomGroupMessageHandler(topologyObject.id, async (e) => {
 		// on create/connect
 		if (topologyObject)
-			objectPeers = node.networkNode.getGroupPeers(topologyObject.id);
+			objectPeers = await node.networkNode.getRoomPeers(topologyObject.id);
+		console.log("objectPeers", objectPeers);
 		render();
 	});
 
@@ -80,9 +81,9 @@ async function main() {
 	render();
 
 	// generic message handler
-	node.addCustomGroupMessageHandler("", (e) => {
+	node.addCustomGroupMessageHandler("", async (e) => {
 		peers = node.networkNode.getAllPeers();
-		discoveryPeers = node.networkNode.getGroupPeers("topology::discovery");
+		discoveryPeers = await node.networkNode.getGroupPeers("topology::discovery");
 		render();
 	});
 
