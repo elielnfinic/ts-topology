@@ -25,7 +25,7 @@ import { pubsubPeerDiscovery } from "@libp2p/pubsub-peer-discovery";
 import { webRTC, webRTCDirect } from "@libp2p/webrtc";
 import { webSockets } from "@libp2p/websockets";
 import { webTransport } from "@libp2p/webtransport";
-import { kadDHT, type KadDHT } from "@libp2p/kad-dht";
+import { kadDHT, removePublicAddressesMapper, type KadDHT } from "@libp2p/kad-dht";
 import { multiaddr } from "@multiformats/multiaddr";
 import { type Libp2p, createLibp2p } from "libp2p";
 import { fromString as uint8ArrayFromString } from "uint8arrays/from-string";
@@ -49,8 +49,8 @@ export class TopologyNetworkNode {
 	private _node?: Libp2p;
 	private _pubsub?: PubSub<GossipsubEvents>;
 	private _dht?: KadDHT;
-
 	peerId = "";
+	private _peerMultiaddrs? : string;
 
 	constructor(config?: TopologyNetworkNodeConfig) {
 		this._config = config;
@@ -122,7 +122,13 @@ export class TopologyNetworkNode {
 
 		this._pubsub = this._node.services.pubsub as PubSub<GossipsubEvents>;
 		this.peerId = this._node.peerId.toString();
+		this._peerMultiaddrs = JSON.stringify(this._node.getMultiaddrs());
 		this._dht = this._node.services.dht as KadDHT;
+
+		// this._node?.services.dht?.start();
+
+		this._dht.setMode("server");
+		this._dht.refreshRoutingTable();
 
 		console.log(
 			"topology::network::start: Successfuly started topology network w/ peer_id",
@@ -153,10 +159,15 @@ export class TopologyNetworkNode {
 		}
 
 		try {
-			this.announcePeerOnDHT(topic, this.peerId + "-" + Date.now().toString());	
+			if(topic.includes("::discover")){
+				this._pubsub?.subscribe(topic);
+				this._pubsub?.getPeers();
+			}else{
+				this.announcePeerOnDHT(topic, this.peerId);	
+			}
+
 			console.log("topology::network::subscribe: Announced peer on DHT", topic, this.peerId);
-			// this._pubsub?.subscribe(topic);
-			// this._pubsub?.getPeers();
+			
 			console.log(
 				"topology::network::subscribe: Successfuly subscribed the topic",
 				topic,
@@ -175,8 +186,12 @@ export class TopologyNetworkNode {
 		}
 
 		try {
-			// this._pubsub?.unsubscribe(topic);
-			this.removePeerFromDHT(topic, this.peerId);
+			if(topic.includes("::discover")){
+				this._pubsub?.unsubscribe(topic);
+			}else{
+				this.removePeerFromDHT(topic, this.peerId);
+			}
+			
 			console.log(
 				"topology::network::unsubscribe: Successfuly unsubscribed the topic",
 				topic,
@@ -187,6 +202,7 @@ export class TopologyNetworkNode {
 	}
 
 	getAllPeers() {
+		// const peers = this._node?.getPeers();
 		const peers = this._node?.getPeers();
 		if (!peers) return [];
 		return peers.map((peer) => peer.toString());
