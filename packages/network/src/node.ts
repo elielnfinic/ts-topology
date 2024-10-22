@@ -31,6 +31,7 @@ import { type Libp2p, createLibp2p } from "libp2p";
 import { fromString as uint8ArrayFromString } from "uint8arrays/from-string";
 import { Message } from "./proto/messages_pb.js";
 import { uint8ArrayToStream } from "./stream.js";
+import { kadDHT } from "@libp2p/kad-dht";
 
 export * from "./stream.js";
 
@@ -77,12 +78,16 @@ export class TopologyNetworkNode {
 
 		const peer_discovery = bootstrap_nodes_list.length
 			? [
-					_pubsubPeerDiscovery,
+					// kadDHT(),
+					// _pubsubPeerDiscovery,
 					bootstrap({
 						list: bootstrap_nodes_list,
 					}),
 				]
-			: [_pubsubPeerDiscovery];
+			: [
+				// _pubsubPeerDiscovery,
+				// kadDHT()
+			];
 
 		this._node = await createLibp2p({
 			privateKey,
@@ -102,6 +107,11 @@ export class TopologyNetworkNode {
 				dcutr: dcutr(),
 				identify: identify(),
 				pubsub: gossipsub(),
+				dht : kadDHT({
+					protocol : "/topology/dht/1.0.0",
+					kBucketSize : 20,
+					clientMode : !this._config?.bootstrap 
+				})
 			},
 			streamMuxers: [yamux()],
 			transports: [
@@ -129,6 +139,7 @@ export class TopologyNetworkNode {
 
 		this._pubsub = this._node.services.pubsub as PubSub<GossipsubEvents>;
 		this.peerId = this._node.peerId.toString();
+		// (this._node.services.dht? as KaDHT).start();
 
 		console.log(
 			"topology::network::start: Successfuly started topology network w/ peer_id",
