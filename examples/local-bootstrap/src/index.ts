@@ -19,7 +19,7 @@ let peers: string[] = [];
 
 const render = () => {
 	const element_peerId = <HTMLDivElement>document.getElementById("peerId");
-	element_peerId.innerHTML = node.networkNode.peerId;
+	element_peerId.innerHTML = node?.networkNode?.peerId || "";
 
 	const element_peers = <HTMLDivElement>document.getElementById("peers");
 	element_peers.innerHTML = `[${peers.join(", ")}]`;

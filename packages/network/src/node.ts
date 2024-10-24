@@ -31,6 +31,8 @@ import { type Libp2p, createLibp2p } from "libp2p";
 import { fromString as uint8ArrayFromString } from "uint8arrays/from-string";
 import { Message } from "./proto/messages_pb.js";
 import { uint8ArrayToStream } from "./stream.js";
+import { kadDHT } from "@libp2p/kad-dht";
+import { mdns } from "@libp2p/mdns";
 
 export * from "./stream.js";
 
@@ -77,7 +79,11 @@ export class TopologyNetworkNode {
 
 		const _peerDiscovery = _bootstrapNodesList.length
 			? [
-					_pubsubPeerDiscovery,
+					// _pubsubPeerDiscovery,
+					// kadDHT({
+					// 	clientMode: false,
+					// 	kBucketSize: 20,
+					// }),
 					bootstrap({
 						list: _bootstrapNodesList,
 					}),
@@ -87,7 +93,7 @@ export class TopologyNetworkNode {
 		this._node = await createLibp2p({
 			privateKey,
 			addresses: {
-				listen: this._config?.addresses ? this._config.addresses : ["/webrtc"],
+				listen: this._config?.addresses ? this._config.addresses : ["/webrtc", '/p2p-circuit'],
 			},
 			connectionEncrypters: [noise()],
 			connectionGater: {
@@ -96,12 +102,17 @@ export class TopologyNetworkNode {
 				},
 			},
 			metrics: this._config?.browser_metrics ? devToolsMetrics() : undefined,
-			peerDiscovery: _peerDiscovery,
+			// peerDiscovery: _peerDiscovery,
 			services: {
 				autonat: autoNAT(),
 				dcutr: dcutr(),
 				identify: identify(),
 				pubsub: gossipsub(),
+				dht : kadDHT({
+					clientMode: false,
+					kBucketSize: 20,
+					protocol: "/topology/dht/0.0.1",
+				})
 			},
 			streamMuxers: [yamux()],
 			transports: [
@@ -138,10 +149,10 @@ export class TopologyNetworkNode {
 		this._node.addEventListener("peer:connect", (e) =>
 			console.log("::start::peer::connect", e.detail),
 		);
-		this._node.addEventListener("peer:discovery", (e) => {
+		this._node.addEventListener("peer:discovery", async (e) => {
 			// current bug in v11.0.0 requires manual dial (https://github.com/libp2p/js-libp2p-pubsub-peer-discovery/issues/149)
 			for (const ma of e.detail.multiaddrs) {
-				this._node?.dial(ma);
+				await this._node?.dial(ma);
 			}
 			console.log("::start::peer::discovery", e.detail);
 		});
