@@ -27,7 +27,6 @@
   "test": "vitest"
  },
  "devDependencies": {
-  "@libp2p/interface": "^2.1.2",
   "react-native-webrtc": "^124.0.3"
  },
  "dependencies": {
@@ -42,6 +41,7 @@
   "@libp2p/dcutr": "^2.0.6",
   "@libp2p/devtools-metrics": "^1.1.5",
   "@libp2p/identify": "^3.0.6",
+  "@libp2p/interface": "2.1.2",
   "@libp2p/kad-dht": "14.0.0",
   "@libp2p/mdns": "^11.0.8",
   "@libp2p/peer-id": "^5.0.4",
