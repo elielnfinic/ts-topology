@@ -9,6 +9,7 @@ import { autoNAT } from "@libp2p/autonat";
 import { bootstrap } from "@libp2p/bootstrap";
 import {
 	circuitRelayServer,
+	CircuitRelayService,
 	circuitRelayTransport,
 } from "@libp2p/circuit-relay-v2";
 import { generateKeyPairFromSeed } from "@libp2p/crypto/keys";
@@ -112,7 +113,7 @@ export class TopologyNetworkNode {
 					clientMode: false,
 					kBucketSize: 20,
 					protocol: "/topology/dht/0.0.1",
-				})
+				}),
 			},
 			streamMuxers: [yamux()],
 			transports: [
@@ -129,8 +130,9 @@ export class TopologyNetworkNode {
 			],
 		});
 
-		if (this._config?.bootstrap)
+		if (this._config?.bootstrap){
 			this._node.services.relay = circuitRelayServer();
+		}
 
 		if (!this._config?.bootstrap) {
 			for (const addr of this._config?.bootstrap_peers || []) {
@@ -159,6 +161,8 @@ export class TopologyNetworkNode {
 		this._node.addEventListener("peer:identify", (e) =>
 			console.log("::start::peer::identify", e.detail),
 		);
+
+		this._node.start();
 	}
 
 	subscribe(topic: string) {
