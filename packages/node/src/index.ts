@@ -28,6 +28,7 @@ export class TopologyNode {
 
 	async start(): Promise<void> {
 		await this.networkNode.start();
+		
 		this.networkNode.addMessageHandler(
 			["/topology/message/0.0.1"],
 			async ({ stream }) => topologyMessagesHandler(this, stream),

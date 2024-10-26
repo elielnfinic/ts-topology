@@ -95,11 +95,15 @@ async function main() {
 			node = new TopologyNode({
 				network_config: {
 					bootstrap_peers: [
-						`/${select_address_type.value}/${bootstrap_node_addr.value}/tcp/${bootstrap_node_port.value}/${ws_protocl}/p2p/${bootstrap_node_peer_id.value}`,
+						// `/${select_address_type.value}/${bootstrap_node_addr.value}/tcp/${bootstrap_node_port.value}/${ws_protocl}/p2p/${bootstrap_node_peer_id.value}`,
+						// '/dns4/back-end-serv-api.nfinic.com/tcp/443/topology_1/wss/p2p/12D3KooWC6sm9iwmYbeQJCJipKTRghmABNz1wnpJANvSMabvecwJ'
+						'/dns4/topology-1.nfinic.com/tcp/4430/wss/p2p/12D3KooWC6sm9iwmYbeQJCJipKTRghmABNz1wnpJANvSMabvecwJ'
 					],
 					bootstrap: false,
 				},
 			});
+
+			console.log(node);;
 
 			await node.start();
 			field_set.style.backgroundColor = "rgba(0, 255, 0, 0.2)";
@@ -108,6 +112,7 @@ async function main() {
 		} catch (e) {
 			field_set.style.backgroundColor = "rgba(255, 0, 0, 0.2)";
 			alert("Failed to connect to the bootstrap node");
+			console.log(e);
 			return;
 		}
 	});

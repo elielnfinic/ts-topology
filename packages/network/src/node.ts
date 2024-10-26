@@ -70,8 +70,12 @@ export class TopologyNetworkNode {
 		const _bootstrapNodesList = this._config?.bootstrap_peers
 			? this._config.bootstrap_peers
 			: [
-					"/dns4/relay.droak.sh/tcp/443/wss/p2p/Qma3GsJmB47xYuyahPZPSadh1avvxfyYQwk8R3UnFrQ6aP",
+					// "/dns4/relay.droak.sh/tcp/443/wss/p2p/Qma3GsJmB47xYuyahPZPSadh1avvxfyYQwk8R3UnFrQ6aP",
+					// "/dns4/topology-1.nfinic.com/tcp/4430/wss/p2p/12D3KooWC6sm9iwmYbeQJCJipKTRghmABNz1wnpJANvSMabvecwJ",
+					"/ip4/127.0.0.1/tcp/50000/ws/p2p/12D3KooWC6sm9iwmYbeQJCJipKTRghmABNz1wnpJANvSMabvecwJ"
 				];
+
+		console.log(_bootstrapNodesList);
 
 		const _pubsubPeerDiscovery = pubsubPeerDiscovery({
 			interval: 10_000,
@@ -80,7 +84,7 @@ export class TopologyNetworkNode {
 
 		const _peerDiscovery = _bootstrapNodesList.length
 			? [
-					// _pubsubPeerDiscovery,
+					_pubsubPeerDiscovery,
 					// kadDHT({
 					// 	clientMode: false,
 					// 	kBucketSize: 20,
@@ -91,10 +95,26 @@ export class TopologyNetworkNode {
 				]
 			: [_pubsubPeerDiscovery];
 
+		console.log("LISTENING ON ", this._config?.addresses ? this._config.addresses : ["/webrtc"]);
+
+		let _services = {
+			autonat: autoNAT(),
+			dcutr: dcutr(),
+			identify: identify(),
+			pubsub: gossipsub(),
+			dht : kadDHT({
+				clientMode: false,
+				kBucketSize: 20,
+				protocol: "/topology/dht/0.0.1",
+			}),
+			relay : circuitRelayServer(),
+		};
+
+		
 		this._node = await createLibp2p({
 			privateKey,
 			addresses: {
-				listen: this._config?.addresses ? this._config.addresses : ["/webrtc", '/p2p-circuit'],
+				listen: this._config?.addresses ? this._config.addresses : ["/webrtc"],
 			},
 			connectionEncrypters: [noise()],
 			connectionGater: {
@@ -103,7 +123,7 @@ export class TopologyNetworkNode {
 				},
 			},
 			metrics: this._config?.browser_metrics ? devToolsMetrics() : undefined,
-			// peerDiscovery: _peerDiscovery,
+			peerDiscovery: _peerDiscovery,
 			services: {
 				autonat: autoNAT(),
 				dcutr: dcutr(),
@@ -114,11 +134,12 @@ export class TopologyNetworkNode {
 					kBucketSize: 20,
 					protocol: "/topology/dht/0.0.1",
 				}),
+				relay : circuitRelayServer(),
 			},
 			streamMuxers: [yamux()],
 			transports: [
 				circuitRelayTransport({
-					discoverRelays: 2,
+					discoverRelays: 1,
 					reservationConcurrency: 1,
 				}),
 				webRTC(),
@@ -154,9 +175,11 @@ export class TopologyNetworkNode {
 		this._node.addEventListener("peer:discovery", async (e) => {
 			// current bug in v11.0.0 requires manual dial (https://github.com/libp2p/js-libp2p-pubsub-peer-discovery/issues/149)
 			for (const ma of e.detail.multiaddrs) {
+				console.log("FOUND MULTIADDRESSES", ma);
 				await this._node?.dial(ma);
 			}
-			console.log("::start::peer::discovery", e.detail);
+			console.log("::start::peer::discovery yyy", e.detail, e.detail);
+			
 		});
 		this._node.addEventListener("peer:identify", (e) =>
 			console.log("::start::peer::identify", e.detail),
@@ -212,6 +235,7 @@ export class TopologyNetworkNode {
 
 	getGroupPeers(group: string) {
 		const peers = this._pubsub?.getSubscribers(group);
+		console.log("Pubsub peers", peers);
 		if (!peers) return [];
 		return peers.map((peer) => peer.toString());
 	}
@@ -240,6 +264,8 @@ export class TopologyNetworkNode {
 			console.error("topology::network::sendMessage:", e);
 		}
 	}
+
+	
 
 	async sendGroupMessageRandomPeer(
 		group: string,
