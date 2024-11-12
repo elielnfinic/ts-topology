@@ -259,6 +259,24 @@ async function main() {
 				console.error("Failed to copy: ", err);
 			});
 	});
+
+	const syncBtn = <HTMLButtonElement>document.getElementById("syncCROs");
+	syncBtn.addEventListener("click", (e) => {
+		if (topologyObject) {
+			// get all the peers
+			const cro_id = topologyObject.id;
+			console.log("The CRO ID is ", cro_id);
+			objectPeers.map(async (obj_peer_id) => {
+				try {
+					await node.syncObject(cro_id, obj_peer_id);
+				} catch (err) {
+					console.log("ERRORR SYNCHRONISING", err);
+				}
+			});
+		} else {
+			alert("The Topology Object does not exist");
+		}
+	});
 }
 
 main();

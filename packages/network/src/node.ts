@@ -99,7 +99,7 @@ export class TopologyNetworkNode {
 			dht: kadDHT({
 				protocol: "/topology/dht/1.0.0",
 				kBucketSize: this._config?.bootstrap ? 40 : 20,
-				clientMode: false,
+				clientMode: false, //!this._config?.bootstrap,
 				peerInfoMapper: removePublicAddressesMapper,
 				querySelfInterval: 20000,
 				initialQuerySelfInterval: 10000,
